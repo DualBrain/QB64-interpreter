@@ -111,7 +111,7 @@ END IF
 
 IF NOT running THEN SYSTEM
 
-_TITLE "qbasic.exe " + commandline$
+_TITLE "qbi.exe " + commandline$
 
 'internal variables (functions)
 RESTORE QB64Functions
