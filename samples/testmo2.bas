@@ -1,4 +1,3 @@
-KEY OFF
 CLS
 DO
     k$ = INKEY$
@@ -26,4 +25,3 @@ DO
 
     _DISPLAY
 LOOP UNTIL k$ = CHR$(27)
-KEY ON

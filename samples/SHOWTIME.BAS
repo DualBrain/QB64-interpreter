@@ -1,4 +1,3 @@
-KEY OFF
 DO
     CLS
     a = RND * 14
@@ -12,7 +11,6 @@ DO
     IF b > 0 THEN
         PRINT "A key was pressed."
         COLOR 7, 0
-        KEY ON
         EXIT DO
     END IF
 LOOP

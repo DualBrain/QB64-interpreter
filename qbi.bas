@@ -385,12 +385,12 @@ DO
       _TITLE temp$
     ELSEIF L$ = "CLS" THEN
       CLS
-    ELSEIF L$ = "SYSTEM" OR L$ = "EXIT" THEN
+    ELSEIF L$ = "SYSTEM" THEN
       SYSTEM
     ELSEIF L$ = "STOP" THEN
       running = FALSE
     ELSEIF L$ = "END" THEN
-      IF running THEN running = FALSE
+      running = FALSE
     ELSEIF LEFT$(L$, 6) = "INPUT " THEN
       DIM varName$, d$, d%
       varName$ = MID$(L1$, 7)
@@ -561,7 +561,6 @@ DO
     ELSEIF LEFT$(L$, 5) = "GOTO " THEN
       DIM theLabel$
       theLabel$ = MID$(L$, 6)
-
       IF isNumber(theLabel$) THEN theLabel$ = theLabel$ + " " ELSE theLabel$ = theLabel$ + ": "
       'look for label
       FOR i = 1 TO UBOUND(program)
