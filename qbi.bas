@@ -186,8 +186,8 @@ DO
   L$ = UCASE$(L1$)
 
   redoThisLine:
-  db_echo "running line" + STR$(currentLine)
-  db_echo ">> " + L1$
+  'db_echo "running line" + STR$(currentLine)
+  'db_echo ">> " + L1$
   IF isNumber(LEFT$(L$, INSTR(L$, " ") - 1)) THEN
     L$ = MID$(L$, INSTR(L$, " ") + 1)
     L1$ = MID$(L1$, INSTR(L1$, " ") + 1)
@@ -692,8 +692,8 @@ DO
           DIM i$
 
           currentIfLevel = currentIfLevel + 1
-          db_echo "IF block, line" + STR$(currentLine)
-          db_echo "Current IF level:" + STR$(currentIfLevel)
+          'db_echo "IF block, line" + STR$(currentLine)
+          'db_echo "Current IF level:" + STR$(currentIfLevel)
 
           checkBlockCondition:
           i$ = MID$(L$, 4, LEN(L$) - 8)
@@ -709,22 +709,22 @@ DO
               IF LEFT$(L$, 3) = "IF " AND RIGHT$(L$, 5) = " THEN" THEN
                 'new if level...
                 currentIfLevel = currentIfLevel + 1
-                db_echo "New IF line:" + STR$(currentLine)
-                db_echo "New IF level:" + STR$(currentIfLevel)
+                'db_echo "New IF line:" + STR$(currentLine)
+                'db_echo "New IF level:" + STR$(currentIfLevel)
                 _CONTINUE
               END IF
               IF L$ = "END IF" OR L$ = "ENDIF" THEN
                 IF currentIfLevel = j THEN
-                  db_echo "Proper END IF found:" + STR$(currentLine)
+                  'db_echo "Proper END IF found:" + STR$(currentLine)
                   EXIT DO
                 ELSE
                   currentIfLevel = currentIfLevel - 1
-                  db_echo "Inner END IF found; level:" + STR$(currentIfLevel)
+                  'db_echo "Inner END IF found; level:" + STR$(currentIfLevel)
                 END IF
               END IF
               IF LEFT$(L$, 7) = "ELSEIF " THEN
                 IF RIGHT$(L$, 5) = " THEN" AND currentIfLevel = j THEN
-                  db_echo "ELSEIF found; same level:" + STR$(currentIfLevel)
+                  'db_echo "ELSEIF found; same level:" + STR$(currentIfLevel)
                   L$ = MID$(L$, 5)
                   L1$ = MID$(L1$, 5)
                   GOTO checkBlockCondition
@@ -733,11 +733,11 @@ DO
                 END IF
               END IF
               IF L$ = "ELSE" AND currentIfLevel = j THEN
-                db_echo "ELSE block found; same level:" + STR$(currentIfLevel)
+                'db_echo "ELSE block found; same level:" + STR$(currentIfLevel)
                 EXIT DO
               END IF
               IF LEFT$(L$, 5) = "ELSE " AND currentIfLevel = j THEN
-                db_echo "ELSE line found; same level:" + STR$(currentIfLevel)
+                'db_echo "ELSE line found; same level:" + STR$(currentIfLevel)
                 L$ = MID$(L$, 6)
                 L1$ = MID$(L1$, 6)
                 GOTO redoThisLine
@@ -746,7 +746,7 @@ DO
         END IF
       ELSE
         'single-line IF statement
-        db_echo "Single-line IF, line" + STR$(currentLine)
+        'db_echo "Single-line IF, line" + STR$(currentLine)
         j = Find(1, L$, " THEN ")
         IF j = 0 THEN
           PRINT "Expected IF condition THEN statements"
@@ -754,9 +754,9 @@ DO
           GOTO Parse.Done
         END IF
         i$ = MID$(LEFT$(L1$, j), 3)
-        db_echo "Condition: '" + i$ + "'"
+        'db_echo "Condition: '" + i$ + "'"
         IF VAL(Parse(i$)) <> 0 THEN
-          db_echo "condition passed! ---------------->"
+          'db_echo "condition passed! ---------------->"
           L$ = MID$(L$, j + 6)
           L1$ = MID$(L1$, j + 6)
           j = Find(1, L$, " ELSE ")
@@ -766,17 +766,17 @@ DO
             L$ = LEFT$(L$, j - 1)
             L1$ = LEFT$(L1$, j - 1)
           END IF
-          db_echo "Redoing line as '" + L$ + "'"
+          'db_echo "Redoing line as '" + L$ + "'"
           GOTO redoThisLine
         ELSE
-          db_echo "condition is false! <----------------"
+          'db_echo "condition is false! <----------------"
           'look for ELSE
           j = Find(j, L$, " ELSE ")
           IF j = 0 THEN j = Find(1, L$, ":ELSE ")
           IF j THEN
             L$ = MID$(L$, j + 6)
             L1$ = MID$(L1$, j + 6)
-            db_echo "ELSE: Redoing line as '" + L$ + "'"
+            'db_echo "ELSE: Redoing line as '" + L$ + "'"
             GOTO redoThisLine
           END IF
         END IF
@@ -1216,7 +1216,7 @@ FUNCTION Parse$ (__inputExpr AS STRING)
   REDIM oe(0) AS LONG
   REDIM strs(0) AS STRING
 
-  db_echo "------------------ Parsing: " + __inputExpr
+  'db_echo "------------------ Parsing: " + __inputExpr
 
   IF LEFT$(__inputExpr, 1) = CHR$(34) AND INSTR(2, __inputExpr, CHR$(34)) = LEN(__inputExpr) THEN
     'string literal
@@ -1343,7 +1343,7 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
     NEXT
   END IF
 
-  db_echo "* Entering Compute##(): " + expr
+  'db_echo "* Entering Compute##(): " + expr
 
   'break down expr into element()
   FOR i = 1 TO LEN(expr)
@@ -1375,9 +1375,9 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
         el$ = el$ + element(l)
       END IF
     NEXT
-    db_echo "** Total elements:" + STR$(tempElCount) + " **"
-    db_echo el$
-    db_echo "     ***"
+    'db_echo "** Total elements:" + STR$(tempElCount) + " **"
+    'db_echo el$
+    'db_echo "     ***"
   END IF
 
   FOR i = 1 TO LEN(validOP$)
@@ -1397,7 +1397,7 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
           op1## = GetVal(element(j - l), getvalTxtRet1, getvalTxtResult1)
           IF getvalTxtRet1 THEN txtop1$ = getvalTxtResult1
         END IF
-        db_echo "element(j - l) = " + element(j - l)
+        'db_echo "element(j - l) = " + element(j - l)
         m = 1
         IF j + m <= totalElements THEN
           DO UNTIL LEN(_TRIM$(element(j + m))) > 0 AND INSTR(validOP$, element(j + m)) = 0
@@ -1411,9 +1411,9 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
           op2## = GetVal(element(j + m), getvalTxtRet2, getvalTxtResult2)
           IF getvalTxtRet2 THEN txtop2$ = getvalTxtResult2
         END IF
-        db_echo "element(j + m) = " + element(j + m)
-        db_echo "op1=" + STR$(op1##) + "; oper=" + op(i) + "; op2=" + STR$(op2##)
-        db_echo "txtop1=" + txtop1$ + "; oper=" + op(i) + "; txtop2=" + txtop2$
+        'db_echo "element(j + m) = " + element(j + m)
+        'db_echo "op1=" + STR$(op1##) + "; oper=" + op(i) + "; op2=" + STR$(op2##)
+        'db_echo "txtop1=" + txtop1$ + "; oper=" + op(i) + "; txtop2=" + txtop2$
         SELECT CASE op(i)
           CASE "^"
             IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
@@ -1476,8 +1476,8 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               throwError 13: EXIT FUNCTION
             END IF
         END SELECT
-        db_echo "temp result## =" + STR$(result##)
-        db_echo "temp txtresult$ =" + txtresult$
+        'db_echo "temp result## =" + STR$(result##)
+        'db_echo "temp txtresult$ =" + txtresult$
         element(j - l) = ""
         element(j + m) = ""
         IF foundAsText THEN
@@ -1495,9 +1495,9 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               el$ = el$ + element(l)
             END IF
           NEXT
-          db_echo "** Total elements:" + STR$(tempElCount) + " **"
-          db_echo el$
-          db_echo "     ***"
+          'db_echo "** Total elements:" + STR$(tempElCount) + " **"
+          'db_echo el$
+          'db_echo "     ***"
         END IF
       END IF
     NEXT
@@ -1613,9 +1613,9 @@ FUNCTION IsNumber%% (__a$)
   isNumber%% = true
 END FUNCTION
 
-SUB db_echo (text$)
-  'IF debugging THEN _ECHO text$
-END SUB
+'SUB db_echo (text$)
+'  'IF debugging THEN _ECHO text$
+'END SUB
 
 SUB ThrowError (code AS INTEGER)
   IF running THEN PRINT "("; _TRIM$(STR$(_ERRORLINE)); ") "
