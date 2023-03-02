@@ -1,17 +1,6 @@
-'$CONSOLE
+'$INCLUDE: '..\QuickPakPro\QB64\PRO.BI'
 
 CONST TRUE = -1, FALSE = NOT TRUE
-
-DIM SHARED debugging AS INTEGER
-debugging = FALSE
-
-CHDIR _STARTDIR$
-
-IF debugging = FALSE THEN
-  '_CONSOLE OFF
-ELSE
-  _SCREENMOVE _SCREENX + 800, _SCREENY
-END IF
 
 TYPE VarType
   Name AS STRING * 40
@@ -55,785 +44,753 @@ CONST varTypeLONG = 11
 REDIM SHARED vars(0) AS VarType
 REDIM SHARED strings(0) AS STRING
 REDIM SHARED nums(0) AS _FLOAT
-REDIM SHARED program(0) AS STRING
 DIM SHARED totalVars AS LONG
-DIM varType_DEFAULT AS _BYTE
 DIM SHARED thisScope$
-DIM currentLine AS LONG
-'DIM lineThatErrored AS LONG
-DIM varIndex AS LONG
-DIM i AS LONG
-DIM j AS LONG
-DIM l AS LONG
-DIM continuation$
-DIM Ucontinuation$
-DIM continueAt AS LONG
-DIM loopControl(100) AS LevelControlType
-DIM forControl(100) AS ForControlType
-DIM currentDoLevel AS INTEGER, currentIfLevel AS INTEGER, currentForLevel AS INTEGER
 DIM SHARED errorHappened AS _BYTE
 DIM SHARED keyhit AS LONG
-DIM screenKeyStatus AS _BYTE
-DIM externalLimit AS INTEGER
-'DIM temp$
-'DIM L$
-'DIM L1$
-'DIM saveFile$
-'DIM q AS STRING * 1
-'DIM k$
-'DIM MyBad AS _BYTE
-DIM Comma1 AS INTEGER
-DIM Comma2 AS INTEGER
-DIM Comma3 AS INTEGER
-DIM SHARED running AS INTEGER '_BYTE
-DIM loaded AS INTEGER '_BYTE
-'DIM loadedFile$
-DIM SHARED loadedFileContents$
 
-thisScope$ = "MAIN MODULE"
-varType_DEFAULT = varTypeSINGLE
-screenKeyStatus = TRUE
+DIM SHARED varType_DEFAULT AS _BYTE
+DIM SHARED currentLine AS LONG
+DIM SHARED lineThatErrored AS LONG
 
-DIM commandline$: commandline$ = COMMAND$
+CHDIR _STARTDIR$
+
+commandline$ = COMMAND$
 IF commandline$ = "" THEN
   commandline$ = "./samples/test.bas"
 END IF
 IF _FILEEXISTS(commandline$) THEN
-  IF Load(commandline$) THEN
-    loaded = TRUE
-    currentLine = 0
-    currentDoLevel = 0
-    currentIfLevel = 0
-    externalLimit = 0
-    running = TRUE
-  END IF
+  content$ = Load$(commandline$)
 END IF
 
-IF NOT running THEN SYSTEM
+IF content$ = "" THEN SYSTEM
 
 _TITLE "qbi.exe " + commandline$
 
-'internal variables (functions)
-RESTORE QB64Functions
-DIM funcName$
-DO
-  READ funcName$
-  IF funcName$ = "*end*" THEN EXIT DO
-  varIndex = addVar(funcName$)
-  vars(varIndex).protected = TRUE
-LOOP
+Runner content$
 
-QB64Functions:
-DATA val,int,asc,cos,sin,len,rnd,timer,time$,date$
-DATA chr$,inkey$,_width,_height,_mousex,_mousey,_mousebutton
-DATA str$,asc,_resize,_resizewidth,_resizeheight,_scaledwidth
-DATA _scaledheight,_screenhide,_console,_blink,_fileexists
-DATA _direxists,_devices,_device$,_deviceinput,_lastbutton
-DATA _lastaxis,_lastwheel,_button,_buttonchange,_axis,_wheel
-DATA _screenx,_screeny,_os$,_title$,_mapunicode,_keydown
-DATA _keyhit,_windowhandle,_screenimage,_freetimer,_fullscreen
-DATA _smooth,_windowhasfocus,_clipboard$,_clipboardimage
-DATA _exit,_openhost,_connected,_connectionaddress,_connectionaddress$
-DATA _openconnection,_openclient,environ$,_errorline,_inclerrorline
-DATA _acceptfiledrop,_totaldroppedfiles,_droppedfile,_droppedfile$
-DATA _newimage,_loadimage,_copyimage,_source,_dest,_display
-DATA _pixelsize,_clearcolor,_blend,_defaultcolor,_backgroundcolor
-DATA _palettecolor,_loadfont,_fontwidth,_fontheight,_font
-DATA _printwidth,_printmode,_rgba,_rgba32,_rgb,_rgb32
-DATA _red,_red32,_green,_green32,_blue,_blue32
-DATA _alpha,_alpha32,_mouseinput,_mousewheel,freefile
-DATA shell,_shellhide,command$,_commandcount,_sndrate
-DATA _sndopenraw,_sndrawlen,_sndlen,_sndpaused,_sndopen
-DATA _sndgetpos,_sndplaying,_sndcopy,seek,loc,eof
-DATA lof,screen,point,tab,spc,inp,pos,sgn,lbound,ubound
-DATA oct$,hex$,exp,fix,cdbl,csng,_round,cint,clng
-DATA csrlin,mki$,mkl$,mks$,mkd$,mksmbf$,mkdmbf$
-DATA _mk$,cvsmbf,cvdmbf,cvi,cvl,cvs,cvd,_cv
-DATA string$,space$,instr,_instrrev,mid$,sqr
-DATA tan,atn,log,abs,erl,err,ucase$,lcase$,left$
-DATA right$,ltrim$,rtrim$,_trim$,_cwd$,_startdir$
-DATA _dir$,_inclerrorfile$,_atan2,_hypot,_pi,_desktopheight
-DATA _desktopwidth,_screenexists,_controlchr,_stricmp
-DATA _strcmp,_autodisplay,_shr,_shl,_deflate$,_inflate$
-DATA _readbit,_setbit,_resetbit,_togglebit
-DATA *end*
+'$INCLUDE: '..\QuickPakPro\QB64\PRO.BAS'
 
-DO
+SUB Runner(content$)
 
-  keyhit = _KEYHIT
+  DIM running AS INTEGER '_BYTE
 
-  IF (ABS(keyhit) = ASC("C") OR ABS(keyhit) = ASC("c")) AND (_KEYDOWN(100305) OR _KEYDOWN(100306)) THEN
-    PRINT "Break."
-    IF running THEN running = FALSE
-    _KEYCLEAR
+  DIM i AS LONG
+  DIM j AS LONG
+  DIM l AS LONG
+  DIM continuation$
+  DIM Ucontinuation$
+  DIM continueAt AS LONG
+  DIM loopControl(100) AS LevelControlType
+  DIM forControl(100) AS ForControlType
+  DIM currentDoLevel AS INTEGER, currentIfLevel AS INTEGER, currentForLevel AS INTEGER
+  DIM screenKeyStatus AS _BYTE
+  DIM externalLimit AS INTEGER
+  DIM Comma1 AS INTEGER
+  DIM Comma2 AS INTEGER
+  DIM Comma3 AS INTEGER
+  REDIM program(0) AS STRING
+  program(0) = ""
+
+  IF content$ <> "" THEN
+    delim$ = CHR$(10)
+    x = Delimit%(content$, delim$) + 1    ' see how many matching 
+                                          ' delimiters there are 
+    REDIM _PRESERVE program(x) AS STRING  ' +1 is needed to account 
+                                          ' for the last item 
+    Parse content$, delim$, program() 
   END IF
 
-  IF running THEN
-    currentLine = currentLine + 1
-    IF currentLine > UBOUND(program) THEN
-      running = FALSE
-    ELSE
-      L1$ = program(currentLine)
+  InitVar
+
+  thisScope$ = "MAIN MODULE"
+  varType_DEFAULT = varTypeSINGLE
+  screenKeyStatus = TRUE
+
+  currentLine = 0
+  currentDoLevel = 0
+  currentIfLevel = 0
+  externalLimit = 0
+  running = TRUE
+
+  DO
+
+    keyhit = _KEYHIT
+
+    IF (ABS(keyhit) = ASC("C") OR ABS(keyhit) = ASC("c")) AND (_KEYDOWN(100305) OR _KEYDOWN(100306)) THEN
+      PRINT "Break."
+      IF running THEN running = FALSE
+      _KEYCLEAR
     END IF
-  END IF
 
-  IF NOT running THEN 
-    LOCATE 25, 1: PRINT "Press any key to continue";
-    EXIT DO
-  END IF
+    IF running THEN
+      currentLine = currentLine + 1
+      IF currentLine > UBOUND(program) THEN
+        running = FALSE
+      ELSE
+        L1$ = program(currentLine)
+      END IF
+    END IF
 
-  L1$ = LTRIM$(RTRIM$(L1$))
-  L$ = UCASE$(L1$)
+    IF NOT running THEN 
+      LOCATE 25, 1: PRINT "Press any key to continue";
+      EXIT DO
+    END IF
 
-  redoThisLine:
-  'db_echo "running line" + STR$(currentLine)
-  'db_echo ">> " + L1$
-  IF isNumber(LEFT$(L$, INSTR(L$, " ") - 1)) THEN
-    L$ = MID$(L$, INSTR(L$, " ") + 1)
-    L1$ = MID$(L1$, INSTR(L1$, " ") + 1)
-    GOTO redoThisLine
-  ELSE
+    L1$ = LTRIM$(RTRIM$(L1$))
+    L$ = UCASE$(L1$)
 
-    'look for : separators
-    IF LEFT$(L$, 3) <> "IF " THEN
-      j = Find(1, L$, ":")
-      IF j > 0 AND j < LEN(L$) THEN
-        continuation$ = _TRIM$(MID$(L1$, j + 1))
-        Ucontinuation$ = _TRIM$(MID$(L$, j + 1))
-        L1$ = _TRIM$(LEFT$(L1$, j - 1))
-        L$ = _TRIM$(LEFT$(L$, j - 1))
-        continueAt = _INSTRREV(program(currentLine), continuation$)
-      ELSEIF j = LEN(L$) THEN
-        IF INSTR(L$, " ") > 0 THEN
-          L$ = LEFT$(L$, LEN(L$) - 1)
-          L1$ = LEFT$(L1$, LEN(L1$) - 1)
+    redoThisLine:
+    'db_echo "running line" + STR$(currentLine)
+    'db_echo ">> " + L1$
+    IF isNumber(LEFT$(L$, INSTR(L$, " ") - 1)) THEN
+      L$ = MID$(L$, INSTR(L$, " ") + 1)
+      L1$ = MID$(L1$, INSTR(L1$, " ") + 1)
+      GOTO redoThisLine
+    ELSE
+
+      'look for : separators
+      IF LEFT$(L$, 3) <> "IF " THEN
+        j = Find(1, L$, ":")
+        IF j > 0 AND j < LEN(L$) THEN
+          continuation$ = _TRIM$(MID$(L1$, j + 1))
+          Ucontinuation$ = _TRIM$(MID$(L$, j + 1))
+          L1$ = _TRIM$(LEFT$(L1$, j - 1))
+          L$ = _TRIM$(LEFT$(L$, j - 1))
+          continueAt = _INSTRREV(program(currentLine), continuation$)
+        ELSEIF j = LEN(L$) THEN
+          IF INSTR(L$, " ") > 0 THEN
+            L$ = LEFT$(L$, LEN(L$) - 1)
+            L1$ = LEFT$(L1$, LEN(L1$) - 1)
+            continuation$ = ""
+            Ucontinuation$ = ""
+            continueAt = 0
+          ELSE
+            'likely a label, leave it as is
+          END IF
+        ELSE
           continuation$ = ""
           Ucontinuation$ = ""
           continueAt = 0
-        ELSE
-          'likely a label, leave it as is
         END IF
       ELSE
         continuation$ = ""
         Ucontinuation$ = ""
         continueAt = 0
       END IF
-    ELSE
-      continuation$ = ""
-      Ucontinuation$ = ""
-      continueAt = 0
-    END IF
 
-    IF LEFT$(L$, 6) = "CHDIR " THEN
-      CHDIR Parse$(MID$(L1$, 7))
-    ELSEIF LEFT$(L$, 6) = "MKDIR " THEN
-      MKDIR Parse$(MID$(L1$, 7))
-    ELSEIF LEFT$(L$, 5) = "KILL " THEN
-      KILL Parse$(MID$(L1$, 6))
-    ELSEIF L$ = "CLEAR" THEN
-      j = 0
-      FOR i = totalVars TO 1 STEP -1
-        IF NOT vars(i).protected THEN
-          totalVars = totalVars - 1
-          vars(i).name = ""
-          vars(i).type = 0
-          strings(i) = ""
-          nums(i) = 0
-        END IF
-      NEXT
-    ELSEIF L$ = "_DISPLAY" THEN
-      _DISPLAY
-    ELSEIF LEFT$(L$, 6) = "WIDTH " THEN
-      DIM p$, p1$, p2$
-      p$ = MID$(L$, 7)
-      IF INSTR(p$, ",") THEN
-        p1$ = LEFT$(p$, INSTR(p$, ",") - 1)
-        p2$ = MID$(p$, INSTR(p$, ",") + 1)
-        IF LEN(p1$) = 0 THEN
-          WIDTH , VAL(Parse$(p2$))
-        ELSE
-          WIDTH VAL(Parse$(p1$)), VAL(Parse$(p2$))
-        END IF
-      ELSE
-        WIDTH VAL(Parse$(p$))
-      END IF
-    ELSEIF LEFT$(L$, 10) = "RANDOMIZE " THEN
-      RANDOMIZE VAL(Parse$(MID$(L$, 11)))
-    ELSEIF LEFT$(L$, 7) = "_LIMIT " THEN
-      externalLimit = VAL(Parse$(MID$(L$, 8)))
-    ELSEIF LEFT$(L$, 1) = "'" OR LEFT$(L$, 4) = "REM " OR L$ = "'" OR L$ = "REM" OR L$ = "" THEN
-      'it's a comment.
-    ELSEIF LEFT$(L$, 4) = "KEY " THEN
-      IF _TRIM$(MID$(L$, 5)) = "ON" THEN
-        KEY ON
-        screenKeyStatus = TRUE
-      ELSEIF _TRIM$(MID$(L$, 5)) = "OFF" THEN
-        KEY OFF
-        screenKeyStatus = FALSE
-      ELSE
-        GOTO syntaxerror
-      END IF
-    ELSEIF LEFT$(L$, 6) = "COLOR " THEN
-      DIM c$, c1$, c2$
-      c$ = MID$(L$, 7)
-      IF INSTR(c$, ",") THEN
-        c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
-        c2$ = MID$(c$, INSTR(c$, ",") + 1)
-        IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
-          COLOR VAL(Parse(c1$)), VAL(Parse(c2$))
-        ELSEIF LEN(c1$) > 0 AND LEN(c2$) = 0 THEN
-          COLOR VAL(Parse(c1$))
-        ELSEIF LEN(c1$) = 0 AND LEN(c2$) > 0 THEN
-          COLOR , VAL(Parse(c2$))
-        END IF
-      ELSE
-        COLOR VAL(Parse(c$))
-      END IF
-    ELSEIF LEFT$(L$, 7) = "_BLINK " THEN
-      IF _TRIM$(MID$(L$, 8)) = "ON" THEN
-        _BLINK ON
-      ELSEIF _TRIM$(MID$(L$, 8)) = "OFF" THEN
-        _BLINK OFF
-      ELSE
-        GOTO syntaxerror
-      END IF
-    ELSEIF LEFT$(L$, 7) = "LOCATE " THEN
-      c$ = MID$(L$, 8)
-      IF INSTR(c$, ",") THEN
-        c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
-        c2$ = MID$(c$, INSTR(c$, ",") + 1)
-        IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
-          LOCATE VAL(Parse$(c1$)), VAL(Parse$(c2$))
-        ELSEIF LEN(c1$) > 0 AND LEN(c2$) = 0 THEN
-          LOCATE VAL(Parse$(c1$))
-        ELSEIF LEN(c1$) = 0 AND LEN(c2$) > 0 THEN
-          LOCATE , VAL(Parse$(c2$))
-        END IF
-      ELSE
-        LOCATE VAL(Parse$(c$))
-      END IF
-    ELSEIF LEFT$(L$, 6) = "FILES " THEN
-      temp$ = Parse$(MID$(L1$, 7))
-      FILES temp$
-    ELSEIF L$ = "FILES" THEN
-      FILES
-    ELSEIF LEFT$(L$, 9) = "_SNDPLAY " THEN
-      _SNDPLAY VAL(Parse$(MID$(L$, 10)))
-    ELSEIF LEFT$(L$, 8) = "CIRCLE (" THEN
-      IF _PIXELSIZE(_DEST) = 0 THEN throwError 5: GOTO Parse.Done
-      Comma1% = INSTR(L$, ","): Comma2% = INSTR(Comma1% + 1, L$, ","): Comma3% = INSTR(Comma2% + 1, L$, ",")
-
-      DIM XPos1%, YPos1%, X1%, Y1%, Rad%, DrawClr%, EPos%, Elipse!, Arc%
-      DIM Comma4%, Comma5%, ArcBeg!, ArcEnd!, d##
-      XPos1% = INSTR(L$, " (") + 2
-      YPos1% = Comma1% + 1
-      X1% = VAL(Parse(MID$(L$, XPos1%, Comma1% - XPos1%)))
-      Y1% = VAL(Parse(MID$(L$, YPos1%, Comma2% - YPos1% - 1)))
-
-      Rad% = VAL(Parse(MID$(L$, Comma2% + 1, Comma3% - Comma2% - 1)))
-
-      c$ = LTRIM$(RTRIM$(LEFT$(MID$(L$, Comma3% + 1), 3))) 'Color attribute (variable or constant)
-      IF RIGHT$(c$, 1) = "," THEN c$ = LEFT$(c$, LEN(c$) - 1) 'If single-digit attribute
-
-      IF INSTR("0123456789", LEFT$(c$, 1)) > 0 THEN DrawClr% = VAL(c$) ELSE DrawClr% = VAL(Parse(c$))
-
-      EPos% = INSTR(L$, ", , , ")
-
-      IF EPos% > 0 THEN
-          EPos% = EPos% + 6: Elipse = VAL(Parse$(MID$(L$, EPos%)))
-      ELSE
-          Arc% = INSTR(Comma3% + 1, L$, ",")
-
-          IF Arc% > 0 THEN
-              Comma4% = Arc%
-              Comma5% = INSTR(Comma4% + 1, L$, ",")
-
-              ArcBeg = VAL(Parse$(MID$(L$, Comma4% + 1, Comma5% - Comma4% - 1))) ': PRINT "ArcBeg:"; ArcBeg;   '* * * * Test PRINT
-              ArcEnd = VAL(Parse$(MID$(L$, Comma5% + 1))) ': PRINT " ArcEnd:"; ArcEnd;
-
-              IF INSTR(Comma5% + 1, L$, ",") > 0 THEN EPos% = INSTR(Comma5% + 1, L$, ",") + 1: Elipse = VAL(Parse$(MID$(L$, EPos%)))
+      IF LEFT$(L$, 6) = "CHDIR " THEN
+        CHDIR Parse$(running, MID$(L1$, 7))
+      ELSEIF LEFT$(L$, 6) = "MKDIR " THEN
+        MKDIR Parse$(running, MID$(L1$, 7))
+      ELSEIF LEFT$(L$, 5) = "KILL " THEN
+        KILL Parse$(running, MID$(L1$, 6))
+      ELSEIF L$ = "CLEAR" THEN
+        j = 0
+        FOR i = totalVars TO 1 STEP -1
+          IF NOT vars(i).protected THEN
+            totalVars = totalVars - 1
+            vars(i).name = ""
+            vars(i).type = 0
+            strings(i) = ""
+            nums(i) = 0
           END IF
-      END IF
-
-      IF Arc% > 0 AND Elipse = 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, ArcBeg, ArcEnd: GOTO Circ.Done
-      IF Elipse > 0 AND Arc% = 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, , , Elipse: GOTO Circ.Done
-      IF Arc% > 0 AND Elipse > 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, ArcBeg, ArcEnd, Elipse: GOTO Circ.Done
-      CIRCLE (X1%, Y1%), Rad%, DrawClr% 'No arc, no elipse
-
-      Circ.Done: Rad% = 0: Arc% = 0: Elipse = 0: c$ = "": DrawClr% = 0: GOTO Parse.Done
-    ELSEIF L$ = "SLEEP" THEN
-      SLEEP
-    ELSEIF LEFT$(L$, 6) = "SLEEP " THEN
-      SLEEP VAL(Parse$(MID$(L$, 7)))
-    ELSEIF L$ = "PRINT" OR L$ = "?" THEN
-      PRINT
-    ELSEIF LEFT$(L$, 6) = "PRINT " OR LEFT$(L$, 1) = "?" THEN
-      IF LEFT$(L$, 2) = "? " THEN L1$ = "PRINT " + MID$(L1$, 3): L$ = L1$
-      IF LEFT$(L$, 1) = "?" THEN L1$ = "PRINT " + MID$(L1$, 2): L$ = L1$
-      DIM retainCursor AS _BYTE
-      IF RIGHT$(L$, 1) = ";" THEN
-        retainCursor = TRUE
-        L$ = LEFT$(L$, LEN(L$) - 1)
-        L1$ = LEFT$(L1$, LEN(L$))
-      ELSE
-        retainCursor = FALSE
-      END IF
-      PRINT Parse(MID$(L1$, 7));
-      IF NOT retainCursor THEN PRINT
-    ELSEIF LEFT$(L$, 7) = "_TITLE " THEN
-      temp$ = Parse$(MID$(L1$, 8))
-      _TITLE temp$
-    ELSEIF L$ = "CLS" THEN
-      CLS
-    ELSEIF L$ = "SYSTEM" THEN
-      SYSTEM
-    ELSEIF L$ = "STOP" THEN
-      running = FALSE
-    ELSEIF L$ = "END" THEN
-      running = FALSE
-    ELSEIF LEFT$(L$, 6) = "INPUT " THEN
-      DIM varName$, d$, d%
-      varName$ = MID$(L1$, 7)
-      varIndex = addVar(varName$)
-      IF vars(varIndex).type = varTypeSTRING THEN
-        INPUT "", d$
-        strings(varIndex) = d$
-      ELSE
-        SELECT CASE vars(varIndex).type
-          CASE varTypeINTEGER
-            INPUT "", d%
-            nums(varIndex) = d%
-          CASE ELSE
-            INPUT "", d##
-            nums(varIndex) = d##
-        END SELECT
-      END IF
-    ELSEIF LEFT$(L$, 4) = "FOR " THEN
-      i = Find(1, L$, "=")
-      j = Find(i + 1, L$, " TO ")
-      l = Find(j + 4, L$, " STEP ")
-      IF i = 0 OR j = 0 THEN
-        PRINT "Expected FOR variable = lower TO upper on line"; currentLine
-        running = FALSE
-        GOTO Parse.Done
-      ELSE
-        currentForLevel = currentForLevel + 1
-        IF forControl(currentForLevel).level.firstLine <> currentLine THEN
-          forControl(currentForLevel).level.firstLine = currentLine
-          forControl(currentForLevel).level.continueAt = continueAt
-          forControl(currentForLevel).level.lastLine = 0
-          forControl(currentForLevel).varIndex = 0
-        END IF
-        forControl(currentForLevel).firstRun = TRUE
-        forControl(currentForLevel).varName = _TRIM$(MID$(L1$, 5, i - 5))
-        forControl(currentForLevel).initial = VAL(Parse$(MID$(L1$, i + 1, j - i - 1)))
-        IF l THEN
-          forControl(currentForLevel).final = VAL(Parse$(MID$(L1$, j + 4, l - j - 4)))
-          forControl(currentForLevel).theStep = VAL(Parse$(MID$(L1$, l + 6)))
-        ELSE
-          forControl(currentForLevel).final = VAL(Parse$(MID$(L1$, j + 4)))
-          forControl(currentForLevel).theStep = 1
-        END IF
-        L1$ = forControl(currentForLevel).varName + "=" + STR$(forControl(currentForLevel).initial) + ": NEXT"
-        L$ = UCASE$(L1$)
-        GOTO redoThisLine
-      END IF
-    ELSEIF L$ = "NEXT" THEN
-      IF currentForLevel = 0 THEN
-        running = FALSE
-        PRINT "NEXT without FOR on line"; currentLine
-        GOTO Parse.Done
-      ELSE
-        treatAsNext:
-        IF forControl(currentForLevel).varIndex = 0 THEN
-            forControl(currentForLevel).varIndex = addVar(forControl(currentForLevel).varName) 'acquire var index
-        END IF
-        varIndex = forControl(currentForLevel).varIndex
-        IF forControl(currentForLevel).firstRun THEN
-          forControl(currentForLevel).firstRun = FALSE
-        ELSE
-          forControl(currentForLevel).level.lastLine = currentLine
-          IF vars(varIndex).type = varTypeINTEGER THEN
-            nums(varIndex) = INT(nums(varIndex) + forControl(currentForLevel).theStep)
+        NEXT
+      ELSEIF L$ = "_DISPLAY" THEN
+        _DISPLAY
+      ELSEIF LEFT$(L$, 6) = "WIDTH " THEN
+        DIM p$, p1$, p2$
+        p$ = MID$(L$, 7)
+        IF INSTR(p$, ",") THEN
+          p1$ = LEFT$(p$, INSTR(p$, ",") - 1)
+          p2$ = MID$(p$, INSTR(p$, ",") + 1)
+          IF LEN(p1$) = 0 THEN
+            WIDTH , VAL(Parse$(running, p2$))
           ELSE
-            nums(varIndex) = nums(varIndex) + forControl(currentForLevel).theStep
+            WIDTH VAL(Parse$(running, p1$)), VAL(Parse$(running, p2$))
           END IF
+        ELSE
+          WIDTH VAL(Parse$(running, p$))
         END IF
-        IF forControl(currentForLevel).theStep < 0 THEN
-          IF nums(varIndex) < forControl(currentForLevel).final THEN
-            GOTO treatAsExitFor
-          ELSE
-            currentLine = forControl(currentForLevel).level.firstLine
-            continuation$ = ""
-            Ucontinuation$ = ""
-            IF forControl(currentForLevel).level.continueAt > 0 THEN
-              continuation$ = ""
-              Ucontinuation$ = ""
-              L1$ = MID$(program(currentLine), forControl(currentForLevel).level.continueAt)
-              L$ = UCASE$(L1$)
-              GOTO redoThisLine
+      ELSEIF LEFT$(L$, 10) = "RANDOMIZE " THEN
+        RANDOMIZE VAL(Parse$(running, MID$(L$, 11)))
+      ELSEIF LEFT$(L$, 7) = "_LIMIT " THEN
+        externalLimit = VAL(Parse$(running, MID$(L$, 8)))
+      ELSEIF LEFT$(L$, 1) = "'" OR LEFT$(L$, 4) = "REM " OR L$ = "'" OR L$ = "REM" OR L$ = "" THEN
+        'it's a comment.
+      ELSEIF LEFT$(L$, 4) = "KEY " THEN
+        IF _TRIM$(MID$(L$, 5)) = "ON" THEN
+          KEY ON
+          screenKeyStatus = TRUE
+        ELSEIF _TRIM$(MID$(L$, 5)) = "OFF" THEN
+          KEY OFF
+          screenKeyStatus = FALSE
+        ELSE
+          GOTO syntaxerror
+        END IF
+      ELSEIF LEFT$(L$, 6) = "COLOR " THEN
+        DIM c$, c1$, c2$
+        c$ = MID$(L$, 7)
+        IF INSTR(c$, ",") THEN
+          c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
+          c2$ = MID$(c$, INSTR(c$, ",") + 1)
+          IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
+            COLOR VAL(Parse(running, c1$)), VAL(Parse(running, c2$))
+          ELSEIF LEN(c1$) > 0 AND LEN(c2$) = 0 THEN
+            COLOR VAL(Parse(running, c1$))
+          ELSEIF LEN(c1$) = 0 AND LEN(c2$) > 0 THEN
+            COLOR , VAL(Parse(running, c2$))
+          END IF
+        ELSE
+          COLOR VAL(Parse(running, c$))
+        END IF
+      ELSEIF LEFT$(L$, 7) = "_BLINK " THEN
+        IF _TRIM$(MID$(L$, 8)) = "ON" THEN
+          _BLINK ON
+        ELSEIF _TRIM$(MID$(L$, 8)) = "OFF" THEN
+          _BLINK OFF
+        ELSE
+          GOTO syntaxerror
+        END IF
+      ELSEIF LEFT$(L$, 7) = "LOCATE " THEN
+        c$ = MID$(L$, 8)
+        IF INSTR(c$, ",") THEN
+          c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
+          c2$ = MID$(c$, INSTR(c$, ",") + 1)
+          IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
+            LOCATE VAL(Parse$(running, c1$)), VAL(Parse$(running, c2$))
+          ELSEIF LEN(c1$) > 0 AND LEN(c2$) = 0 THEN
+            LOCATE VAL(Parse$(running, c1$))
+          ELSEIF LEN(c1$) = 0 AND LEN(c2$) > 0 THEN
+            LOCATE , VAL(Parse$(running, c2$))
+          END IF
+        ELSE
+          LOCATE VAL(Parse$(running, c$))
+        END IF
+      ELSEIF LEFT$(L$, 6) = "FILES " THEN
+        temp$ = Parse$(running, MID$(L1$, 7))
+        FILES temp$
+      ELSEIF L$ = "FILES" THEN
+        FILES
+      ELSEIF LEFT$(L$, 9) = "_SNDPLAY " THEN
+        _SNDPLAY VAL(Parse$(running, MID$(L$, 10)))
+      ELSEIF LEFT$(L$, 8) = "CIRCLE (" THEN
+        IF _PIXELSIZE(_DEST) = 0 THEN throwError running, 5: GOTO Parse.Done
+        Comma1% = INSTR(L$, ","): Comma2% = INSTR(Comma1% + 1, L$, ","): Comma3% = INSTR(Comma2% + 1, L$, ",")
+
+        DIM XPos1%, YPos1%, X1%, Y1%, Rad%, DrawClr%, EPos%, Elipse!, Arc%
+        DIM Comma4%, Comma5%, ArcBeg!, ArcEnd!, d##
+        XPos1% = INSTR(L$, " (") + 2
+        YPos1% = Comma1% + 1
+        X1% = VAL(Parse(running, MID$(L$, XPos1%, Comma1% - XPos1%)))
+        Y1% = VAL(Parse(running, MID$(L$, YPos1%, Comma2% - YPos1% - 1)))
+
+        Rad% = VAL(Parse(running, MID$(L$, Comma2% + 1, Comma3% - Comma2% - 1)))
+
+        c$ = LTRIM$(RTRIM$(LEFT$(MID$(L$, Comma3% + 1), 3))) 'Color attribute (variable or constant)
+        IF RIGHT$(c$, 1) = "," THEN c$ = LEFT$(c$, LEN(c$) - 1) 'If single-digit attribute
+
+        IF INSTR("0123456789", LEFT$(c$, 1)) > 0 THEN DrawClr% = VAL(c$) ELSE DrawClr% = VAL(Parse(running, c$))
+
+        EPos% = INSTR(L$, ", , , ")
+
+        IF EPos% > 0 THEN
+            EPos% = EPos% + 6: Elipse = VAL(Parse$(running, MID$(L$, EPos%)))
+        ELSE
+            Arc% = INSTR(Comma3% + 1, L$, ",")
+
+            IF Arc% > 0 THEN
+                Comma4% = Arc%
+                Comma5% = INSTR(Comma4% + 1, L$, ",")
+
+                ArcBeg = VAL(Parse$(running, MID$(L$, Comma4% + 1, Comma5% - Comma4% - 1))) ': PRINT "ArcBeg:"; ArcBeg;   '* * * * Test PRINT
+                ArcEnd = VAL(Parse$(running, MID$(L$, Comma5% + 1))) ': PRINT " ArcEnd:"; ArcEnd;
+
+                IF INSTR(Comma5% + 1, L$, ",") > 0 THEN EPos% = INSTR(Comma5% + 1, L$, ",") + 1: Elipse = VAL(Parse$(running, MID$(L$, EPos%)))
             END IF
-          END IF
-        ELSE
-          IF nums(varIndex) > forControl(currentForLevel).final THEN
-            GOTO treatAsExitFor
-          ELSE
-            currentLine = forControl(currentForLevel).level.firstLine
-            continuation$ = ""
-            Ucontinuation$ = ""
-            IF forControl(currentForLevel).level.continueAt > 0 THEN
-              L1$ = MID$(program(currentLine), forControl(currentForLevel).level.continueAt)
-              L$ = UCASE$(L1$)
-              GOTO redoThisLine
-            END IF
-          END IF
         END IF
-      END IF
-    ELSEIF LEFT$(L$, 5) = "NEXT " THEN
-      IF currentForLevel = 0 THEN
+
+        IF Arc% > 0 AND Elipse = 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, ArcBeg, ArcEnd: GOTO Circ.Done
+        IF Elipse > 0 AND Arc% = 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, , , Elipse: GOTO Circ.Done
+        IF Arc% > 0 AND Elipse > 0 THEN CIRCLE (X1%, Y1%), Rad%, DrawClr%, ArcBeg, ArcEnd, Elipse: GOTO Circ.Done
+        CIRCLE (X1%, Y1%), Rad%, DrawClr% 'No arc, no elipse
+
+        Circ.Done: Rad% = 0: Arc% = 0: Elipse = 0: c$ = "": DrawClr% = 0: GOTO Parse.Done
+      ELSEIF L$ = "SLEEP" THEN
+        SLEEP
+      ELSEIF LEFT$(L$, 6) = "SLEEP " THEN
+        SLEEP VAL(Parse$(running, MID$(L$, 7)))
+      ELSEIF L$ = "PRINT" OR L$ = "?" THEN
+        PRINT
+      ELSEIF LEFT$(L$, 6) = "PRINT " OR LEFT$(L$, 1) = "?" THEN
+        IF LEFT$(L$, 2) = "? " THEN L1$ = "PRINT " + MID$(L1$, 3): L$ = L1$
+        IF LEFT$(L$, 1) = "?" THEN L1$ = "PRINT " + MID$(L1$, 2): L$ = L1$
+        DIM retainCursor AS _BYTE
+        IF RIGHT$(L$, 1) = ";" THEN
+          retainCursor = TRUE
+          L$ = LEFT$(L$, LEN(L$) - 1)
+          L1$ = LEFT$(L1$, LEN(L$))
+        ELSE
+          retainCursor = FALSE
+        END IF
+        PRINT Parse(running, MID$(L1$, 7));
+        IF NOT retainCursor THEN PRINT
+      ELSEIF LEFT$(L$, 7) = "_TITLE " THEN
+        temp$ = Parse$(running, MID$(L1$, 8))
+        _TITLE temp$
+      ELSEIF L$ = "CLS" THEN
+        CLS
+      ELSEIF L$ = "SYSTEM" THEN
+        SYSTEM
+      ELSEIF L$ = "STOP" THEN
         running = FALSE
-        PRINT "NEXT without FOR on line"; currentLine
-        GOTO Parse.Done
-      ELSE
-        IF _TRIM$(MID$(L1$, 6)) <> forControl(currentForLevel).varName THEN
+      ELSEIF L$ = "END" THEN
+        running = FALSE
+      ELSEIF LEFT$(L$, 6) = "INPUT " THEN
+        DIM varName$, d$, d%
+        varName$ = MID$(L1$, 7)
+        varIndex = addVar(varName$, FALSE)
+        IF vars(varIndex).type = varTypeSTRING THEN
+          INPUT "", d$
+          strings(varIndex) = d$
+        ELSE
+          SELECT CASE vars(varIndex).type
+            CASE varTypeINTEGER
+              INPUT "", d%
+              nums(varIndex) = d%
+            CASE ELSE
+              INPUT "", d##
+              nums(varIndex) = d##
+          END SELECT
+        END IF
+      ELSEIF LEFT$(L$, 4) = "FOR " THEN
+        i = Find(1, L$, "=")
+        j = Find(i + 1, L$, " TO ")
+        l = Find(j + 4, L$, " STEP ")
+        IF i = 0 OR j = 0 THEN
+          PRINT "Expected FOR variable = lower TO upper on line"; currentLine
           running = FALSE
-          PRINT "Incorrect variable after NEXT on line"; currentLine
           GOTO Parse.Done
         ELSE
-          GOTO treatAsNext
+          currentForLevel = currentForLevel + 1
+          IF forControl(currentForLevel).level.firstLine <> currentLine THEN
+            forControl(currentForLevel).level.firstLine = currentLine
+            forControl(currentForLevel).level.continueAt = continueAt
+            forControl(currentForLevel).level.lastLine = 0
+            forControl(currentForLevel).varIndex = 0
+          END IF
+          forControl(currentForLevel).firstRun = TRUE
+          forControl(currentForLevel).varName = _TRIM$(MID$(L1$, 5, i - 5))
+          forControl(currentForLevel).initial = VAL(Parse$(running, MID$(L1$, i + 1, j - i - 1)))
+          IF l THEN
+            forControl(currentForLevel).final = VAL(Parse$(running, MID$(L1$, j + 4, l - j - 4)))
+            forControl(currentForLevel).theStep = VAL(Parse$(running, MID$(L1$, l + 6)))
+          ELSE
+            forControl(currentForLevel).final = VAL(Parse$(running, MID$(L1$, j + 4)))
+            forControl(currentForLevel).theStep = 1
+          END IF
+          L1$ = forControl(currentForLevel).varName + "=" + STR$(forControl(currentForLevel).initial) + ": NEXT"
+          L$ = UCASE$(L1$)
+          GOTO redoThisLine
         END IF
-      END IF
-    ELSEIF L$ = "EXIT FOR" THEN
-      IF currentForLevel = 0 THEN
-        running = FALSE
-        PRINT "EXIT FOR without FOR on line"; currentLine
-        GOTO Parse.Done
-      ELSE
-        treatAsExitFor:
-        IF forControl(currentForLevel).level.lastLine > 0 THEN
-          currentLine = forControl(currentForLevel).level.lastLine
-          currentForLevel = currentForLevel - 1
+      ELSEIF L$ = "NEXT" THEN
+        IF currentForLevel = 0 THEN
+          running = FALSE
+          PRINT "NEXT without FOR on line"; currentLine
+          GOTO Parse.Done
+        ELSE
+          treatAsNext:
+          IF forControl(currentForLevel).varIndex = 0 THEN
+              forControl(currentForLevel).varIndex = addVar(forControl(currentForLevel).varName, FALSE) 'acquire var index
+          END IF
+          varIndex = forControl(currentForLevel).varIndex
+          IF forControl(currentForLevel).firstRun THEN
+            forControl(currentForLevel).firstRun = FALSE
+          ELSE
+            forControl(currentForLevel).level.lastLine = currentLine
+            IF vars(varIndex).type = varTypeINTEGER THEN
+              nums(varIndex) = INT(nums(varIndex) + forControl(currentForLevel).theStep)
+            ELSE
+              nums(varIndex) = nums(varIndex) + forControl(currentForLevel).theStep
+            END IF
+          END IF
+          IF forControl(currentForLevel).theStep < 0 THEN
+            IF nums(varIndex) < forControl(currentForLevel).final THEN
+              GOTO treatAsExitFor
+            ELSE
+              currentLine = forControl(currentForLevel).level.firstLine
+              continuation$ = ""
+              Ucontinuation$ = ""
+              IF forControl(currentForLevel).level.continueAt > 0 THEN
+                continuation$ = ""
+                Ucontinuation$ = ""
+                L1$ = MID$(program(currentLine), forControl(currentForLevel).level.continueAt)
+                L$ = UCASE$(L1$)
+                GOTO redoThisLine
+              END IF
+            END IF
+          ELSE
+            IF nums(varIndex) > forControl(currentForLevel).final THEN
+              GOTO treatAsExitFor
+            ELSE
+              currentLine = forControl(currentForLevel).level.firstLine
+              continuation$ = ""
+              Ucontinuation$ = ""
+              IF forControl(currentForLevel).level.continueAt > 0 THEN
+                L1$ = MID$(program(currentLine), forControl(currentForLevel).level.continueAt)
+                L$ = UCASE$(L1$)
+                GOTO redoThisLine
+              END IF
+            END IF
+          END IF
+        END IF
+      ELSEIF LEFT$(L$, 5) = "NEXT " THEN
+        IF currentForLevel = 0 THEN
+          running = FALSE
+          PRINT "NEXT without FOR on line"; currentLine
+          GOTO Parse.Done
+        ELSE
+          IF _TRIM$(MID$(L1$, 6)) <> forControl(currentForLevel).varName THEN
+            running = FALSE
+            PRINT "Incorrect variable after NEXT on line"; currentLine
+            GOTO Parse.Done
+          ELSE
+            GOTO treatAsNext
+          END IF
+        END IF
+      ELSEIF L$ = "EXIT FOR" THEN
+        IF currentForLevel = 0 THEN
+          running = FALSE
+          PRINT "EXIT FOR without FOR on line"; currentLine
+          GOTO Parse.Done
+        ELSE
+          treatAsExitFor:
+          IF forControl(currentForLevel).level.lastLine > 0 THEN
+            currentLine = forControl(currentForLevel).level.lastLine
+            currentForLevel = currentForLevel - 1
+          ELSE
+            DO
+              currentLine = currentLine + 1
+              IF currentLine > UBOUND(program) THEN PRINT "FOR without NEXT on line"; forControl(currentForLevel).level.firstLine: running = FALSE: GOTO Parse.Done
+              L1$ = program(currentLine)
+              L1$ = LTRIM$(RTRIM$(L1$))
+              L$ = UCASE$(L1$)
+              IF L$ = "NEXT" OR LEFT$(L$, 5) = "NEXT " THEN
+                currentForLevel = currentForLevel - 1
+                EXIT DO
+              END IF
+            LOOP
+          END IF
+        END IF
+      ELSEIF L$ = "_CONTINUE" THEN
+      ELSEIF L$ = "DO" THEN
+        currentDoLevel = currentDoLevel + 1
+        IF loopControl(currentDoLevel).firstLine <> currentLine THEN
+          loopControl(currentDoLevel).firstLine = currentLine
+          loopControl(currentDoLevel).lastLine = 0
+          loopControl(currentDoLevel).continueAt = continueAt
+        END IF
+        loopControl(currentDoLevel).condition = 0
+      ELSEIF LEFT$(L$, 9) = "DO UNTIL " THEN
+        currentDoLevel = currentDoLevel + 1
+        IF loopControl(currentDoLevel).firstLine <> currentLine THEN
+          loopControl(currentDoLevel).firstLine = currentLine
+          loopControl(currentDoLevel).lastLine = 0
+          loopControl(currentDoLevel).continueAt = continueAt
+        END IF
+        loopControl(currentDoLevel).condition = 1
+        IF VAL(Parse$(running, MID$(L$, 10))) <> 0 THEN
+          GOTO treatAsExitDo
+        END IF
+      ELSEIF LEFT$(L$, 9) = "DO WHILE " THEN
+        currentDoLevel = currentDoLevel + 1
+        IF loopControl(currentDoLevel).firstLine <> currentLine THEN
+          loopControl(currentDoLevel).firstLine = currentLine
+          loopControl(currentDoLevel).lastLine = 0
+          loopControl(currentDoLevel).continueAt = continueAt
+        END IF
+        loopControl(currentDoLevel).condition = 1
+        IF VAL(Parse$(running, MID$(L$, 10))) = 0 THEN
+          GOTO treatAsExitDo
+        END IF
+      ELSEIF LEFT$(L$, 5) = "GOTO " THEN
+        DIM theLabel$
+        theLabel$ = MID$(L$, 6)
+        IF isNumber(theLabel$) THEN theLabel$ = theLabel$ + " " ELSE theLabel$ = theLabel$ + ": "
+        'look for label
+        FOR i = 1 TO UBOUND(program)
+          temp$ = UCASE$(_TRIM$(program(i))) + " "
+          IF LEFT$(temp$, INSTR(temp$, " ")) = UCASE$(theLabel$) THEN
+            currentLine = i - 1
+            GOTO Parse.Done
+          END IF
+        NEXT
+        PRINT "Label not found on line"; currentLine: running = FALSE: GOTO Parse.Done
+      ELSEIF L$ = "LOOP" THEN
+        treatAsLoop:
+        IF currentDoLevel > 0 AND loopControl(currentDoLevel).firstLine > 0 THEN
+          currentLine = loopControl(currentDoLevel).firstLine - 1
+          currentDoLevel = currentDoLevel - 1
+          IF loopControl(currentDoLevel).continueAt > 0 THEN
+            L1$ = MID$(program(currentLine), loopControl(currentDoLevel).continueAt)
+            L$ = UCASE$(L1$)
+            GOTO redoThisLine
+          END IF
+        ELSE
+          IF currentDoLevel = 0 THEN
+            'scan backwards until a DO is found
+            FOR i = currentLine - 1 TO 1
+              IF UCASE$(_TRIM$(program(i))) = "DO" OR LEFT$(UCASE$(_TRIM$(program(i))), 3) = "DO " THEN
+                currentDoLevel = currentDoLevel + 1
+                loopControl(currentDoLevel).firstLine = i
+                loopControl(currentDoLevel).lastLine = currentLine
+                GOTO treatAsLoop
+              END IF
+            NEXT
+            IF i = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
+          END IF
+        END IF
+      ELSEIF LEFT$(L$, 11) = "LOOP UNTIL " THEN
+        IF currentDoLevel = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
+        IF loopControl(currentDoLevel).condition = 1 THEN PRINT "LOOP UNTIL/WHILE not allowed in the same block as DO UNTIL/WHILE on line"; currentLine: running = FALSE: GOTO Parse.Done
+        loopControl(currentDoLevel).condition = 2
+        IF VAL(Parse$(running, MID$(L$, 12))) = 0 THEN
+          GOTO treatAsLoop
+        ELSE
+          currentDoLevel = currentDoLevel - 1
+        END IF
+      ELSEIF LEFT$(L$, 11) = "LOOP WHILE " THEN
+        IF currentDoLevel = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
+        IF loopControl(currentDoLevel).condition = 1 THEN PRINT "LOOP UNTIL/WHILE not allowed in the same block as DO UNTIL/WHILE on line"; currentLine: running = FALSE: GOTO Parse.Done
+        IF VAL(Parse$(running, MID$(L$, 12))) <> 0 THEN
+          GOTO treatAsLoop
+        ELSE
+          currentDoLevel = currentDoLevel - 1
+        END IF
+      ELSEIF L$ = "EXIT DO" THEN
+        IF currentDoLevel = 0 THEN
+          PRINT "EXIT DO without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
+        END IF
+        treatAsExitDo:
+        IF loopControl(currentDoLevel).lastLine > 0 THEN
+          currentLine = loopControl(currentDoLevel).lastLine
+          currentDoLevel = currentDoLevel - 1
         ELSE
           DO
             currentLine = currentLine + 1
-            IF currentLine > UBOUND(program) THEN PRINT "FOR without NEXT on line"; forControl(currentForLevel).level.firstLine: running = FALSE: GOTO Parse.Done
+            IF currentLine > UBOUND(program) THEN PRINT "DO without LOOP on line"; loopControl(currentDoLevel).firstLine: running = FALSE: GOTO Parse.Done
             L1$ = program(currentLine)
             L1$ = LTRIM$(RTRIM$(L1$))
             L$ = UCASE$(L1$)
-            IF L$ = "NEXT" OR LEFT$(L$, 5) = "NEXT " THEN
-              currentForLevel = currentForLevel - 1
+            IF L$ = "LOOP" OR LEFT$(L$, 11) = "LOOP UNTIL " OR LEFT$(L$, 11) = "LOOP WHILE " THEN
+              currentDoLevel = currentDoLevel - 1
               EXIT DO
             END IF
           LOOP
         END IF
-      END IF
-    ELSEIF L$ = "_CONTINUE" THEN
-    ELSEIF L$ = "DO" THEN
-      currentDoLevel = currentDoLevel + 1
-      IF loopControl(currentDoLevel).firstLine <> currentLine THEN
-        loopControl(currentDoLevel).firstLine = currentLine
-        loopControl(currentDoLevel).lastLine = 0
-        loopControl(currentDoLevel).continueAt = continueAt
-      END IF
-      loopControl(currentDoLevel).condition = 0
-    ELSEIF LEFT$(L$, 9) = "DO UNTIL " THEN
-      currentDoLevel = currentDoLevel + 1
-      IF loopControl(currentDoLevel).firstLine <> currentLine THEN
-        loopControl(currentDoLevel).firstLine = currentLine
-        loopControl(currentDoLevel).lastLine = 0
-        loopControl(currentDoLevel).continueAt = continueAt
-      END IF
-      loopControl(currentDoLevel).condition = 1
-      IF VAL(Parse$(MID$(L$, 10))) <> 0 THEN
-        GOTO treatAsExitDo
-      END IF
-    ELSEIF LEFT$(L$, 9) = "DO WHILE " THEN
-      currentDoLevel = currentDoLevel + 1
-      IF loopControl(currentDoLevel).firstLine <> currentLine THEN
-        loopControl(currentDoLevel).firstLine = currentLine
-        loopControl(currentDoLevel).lastLine = 0
-        loopControl(currentDoLevel).continueAt = continueAt
-      END IF
-      loopControl(currentDoLevel).condition = 1
-      IF VAL(Parse$(MID$(L$, 10))) = 0 THEN
-        GOTO treatAsExitDo
-      END IF
-    ELSEIF LEFT$(L$, 5) = "GOTO " THEN
-      DIM theLabel$
-      theLabel$ = MID$(L$, 6)
-      IF isNumber(theLabel$) THEN theLabel$ = theLabel$ + " " ELSE theLabel$ = theLabel$ + ": "
-      'look for label
-      FOR i = 1 TO UBOUND(program)
-        temp$ = UCASE$(_TRIM$(program(i))) + " "
-        IF LEFT$(temp$, INSTR(temp$, " ")) = UCASE$(theLabel$) THEN
-          currentLine = i - 1
-          GOTO Parse.Done
-        END IF
-      NEXT
-      PRINT "Label not found on line"; currentLine: running = FALSE: GOTO Parse.Done
-    ELSEIF L$ = "LOOP" THEN
-      treatAsLoop:
-      IF currentDoLevel > 0 AND loopControl(currentDoLevel).firstLine > 0 THEN
-        currentLine = loopControl(currentDoLevel).firstLine - 1
-        currentDoLevel = currentDoLevel - 1
-        IF loopControl(currentDoLevel).continueAt > 0 THEN
-          L1$ = MID$(program(currentLine), loopControl(currentDoLevel).continueAt)
-          L$ = UCASE$(L1$)
-          GOTO redoThisLine
-        END IF
-      ELSE
-        IF currentDoLevel = 0 THEN
-          'scan backwards until a DO is found
-          FOR i = currentLine - 1 TO 1
-            IF UCASE$(_TRIM$(program(i))) = "DO" OR LEFT$(UCASE$(_TRIM$(program(i))), 3) = "DO " THEN
-              currentDoLevel = currentDoLevel + 1
-              loopControl(currentDoLevel).firstLine = i
-              loopControl(currentDoLevel).lastLine = currentLine
-              GOTO treatAsLoop
-            END IF
-          NEXT
-          IF i = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
-        END IF
-      END IF
-    ELSEIF LEFT$(L$, 11) = "LOOP UNTIL " THEN
-      IF currentDoLevel = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
-      IF loopControl(currentDoLevel).condition = 1 THEN PRINT "LOOP UNTIL/WHILE not allowed in the same block as DO UNTIL/WHILE on line"; currentLine: running = FALSE: GOTO Parse.Done
-      loopControl(currentDoLevel).condition = 2
-      IF VAL(Parse$(MID$(L$, 12))) = 0 THEN
-        GOTO treatAsLoop
-      ELSE
-        currentDoLevel = currentDoLevel - 1
-      END IF
-    ELSEIF LEFT$(L$, 11) = "LOOP WHILE " THEN
-      IF currentDoLevel = 0 THEN PRINT "LOOP without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
-      IF loopControl(currentDoLevel).condition = 1 THEN PRINT "LOOP UNTIL/WHILE not allowed in the same block as DO UNTIL/WHILE on line"; currentLine: running = FALSE: GOTO Parse.Done
-      IF VAL(Parse$(MID$(L$, 12))) <> 0 THEN
-        GOTO treatAsLoop
-      ELSE
-        currentDoLevel = currentDoLevel - 1
-      END IF
-    ELSEIF L$ = "EXIT DO" THEN
-      IF currentDoLevel = 0 THEN
-        PRINT "EXIT DO without DO on line"; currentLine: running = FALSE: GOTO Parse.Done
-      END IF
-      treatAsExitDo:
-      IF loopControl(currentDoLevel).lastLine > 0 THEN
-        currentLine = loopControl(currentDoLevel).lastLine
-        currentDoLevel = currentDoLevel - 1
-      ELSE
-        DO
-          currentLine = currentLine + 1
-          IF currentLine > UBOUND(program) THEN PRINT "DO without LOOP on line"; loopControl(currentDoLevel).firstLine: running = FALSE: GOTO Parse.Done
-          L1$ = program(currentLine)
-          L1$ = LTRIM$(RTRIM$(L1$))
-          L$ = UCASE$(L1$)
-          IF L$ = "LOOP" OR LEFT$(L$, 11) = "LOOP UNTIL " OR LEFT$(L$, 11) = "LOOP WHILE " THEN
-            currentDoLevel = currentDoLevel - 1
-            EXIT DO
+      ELSEIF LEFT$(L$, 7) = "SCREEN " THEN
+        SCREEN VAL(Parse$(running, MID$(L$, 8)))
+      ELSEIF LEFT$(L$, 12) = "_SCREENMOVE " THEN
+        c$ = MID$(L$, 13)
+        IF INSTR(c$, ",") THEN
+          c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
+          c2$ = MID$(c$, INSTR(c$, ",") + 1)
+          IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
+            _SCREENMOVE VAL(Parse(running, c1$)), VAL(Parse(running, c2$))
+          ELSE
+            GOTO syntaxerror
           END IF
-        LOOP
-      END IF
-    ELSEIF LEFT$(L$, 7) = "SCREEN " THEN
-      SCREEN VAL(Parse$(MID$(L$, 8)))
-    ELSEIF LEFT$(L$, 12) = "_SCREENMOVE " THEN
-      c$ = MID$(L$, 13)
-      IF INSTR(c$, ",") THEN
-        c1$ = LEFT$(c$, INSTR(c$, ",") - 1)
-        c2$ = MID$(c$, INSTR(c$, ",") + 1)
-        IF LEN(c1$) > 0 AND LEN(c2$) > 0 THEN
-          _SCREENMOVE VAL(Parse(c1$)), VAL(Parse(c2$))
         ELSE
           GOTO syntaxerror
         END IF
-      ELSE
-        GOTO syntaxerror
-      END IF
-    ELSEIF L$ = "ELSE" OR LEFT$(L$, 7) = "ELSEIF " THEN
-      'skip "ELSE"/"ELSEIF" block (should have already been skipped in the IF evaluation)
-      IF LEFT$(L$, 7) = "ELSEIF " AND RIGHT$(L$, 5) <> " THEN" THEN
-        PRINT "Expected ELSEIF condition THEN on line"; currentLine
-        running = FALSE
-        GOTO Parse.Done
-      END IF
-      temp$ = L$
-      IF LEN(L$) > 4 THEN temp$ = "ELSEIF"
-      DO
-        j = currentLine
-        currentLine = currentLine + 1
-        IF currentLine > UBOUND(program) AND currentIfLevel > 0 THEN
-          PRINT "IF without END IF on line"; currentLine
-          running = FALSE
-          GOTO Parse.Done
-        ELSEIF currentLine > UBOUND(program) THEN
-          PRINT "ELSE without IF on line"; j
+      ELSEIF L$ = "ELSE" OR LEFT$(L$, 7) = "ELSEIF " THEN
+        'skip "ELSE"/"ELSEIF" block (should have already been skipped in the IF evaluation)
+        IF LEFT$(L$, 7) = "ELSEIF " AND RIGHT$(L$, 5) <> " THEN" THEN
+          PRINT "Expected ELSEIF condition THEN on line"; currentLine
           running = FALSE
           GOTO Parse.Done
         END IF
-        L1$ = program(currentLine)
-        L1$ = LTRIM$(RTRIM$(L1$))
-        L$ = UCASE$(L1$)
-        IF L$ = "END IF" OR L$ = "ENDIF" THEN currentIfLevel = currentIfLevel - 1: EXIT DO
-        IF L$ = "ELSE" AND temp$ = "ELSE" THEN
-          PRINT "ELSE used more than once on line"; currentLine
-          running = FALSE
-          GOTO Parse.Done
-        END IF
-      LOOP
-    ELSEIF L$ = "END IF" OR L$ = "ENDIF" THEN
-      IF running THEN
-        currentIfLevel = currentIfLevel - 1
-      ELSE
-        PRINT "Not valid in immediate mode."
-      END IF
-    ELSEIF LEFT$(L$, 3) = "IF " THEN
-      IF RIGHT$(L$, 5) = " THEN" THEN
-          'IF-THEN-ELSEIF-ELSE-END IF block
-
-          DIM i$
-
-          currentIfLevel = currentIfLevel + 1
-          'db_echo "IF block, line" + STR$(currentLine)
-          'db_echo "Current IF level:" + STR$(currentIfLevel)
-
-          checkBlockCondition:
-          i$ = MID$(L$, 4, LEN(L$) - 8)
-
-          IF VAL(Parse(i$)) = 0 THEN 'condition is FALSE
-            j = currentIfLevel
-            DO
-              currentLine = currentLine + 1
-              IF currentLine > UBOUND(program) THEN PRINT "IF without END IF on line"; currentLine: running = FALSE: GOTO Parse.Done
-              L1$ = program(currentLine)
-              L1$ = LTRIM$(RTRIM$(L1$))
-              L$ = UCASE$(L1$)
-              IF LEFT$(L$, 3) = "IF " AND RIGHT$(L$, 5) = " THEN" THEN
-                'new if level...
-                currentIfLevel = currentIfLevel + 1
-                'db_echo "New IF line:" + STR$(currentLine)
-                'db_echo "New IF level:" + STR$(currentIfLevel)
-                _CONTINUE
-              END IF
-              IF L$ = "END IF" OR L$ = "ENDIF" THEN
-                IF currentIfLevel = j THEN
-                  'db_echo "Proper END IF found:" + STR$(currentLine)
-                  EXIT DO
-                ELSE
-                  currentIfLevel = currentIfLevel - 1
-                  'db_echo "Inner END IF found; level:" + STR$(currentIfLevel)
-                END IF
-              END IF
-              IF LEFT$(L$, 7) = "ELSEIF " THEN
-                IF RIGHT$(L$, 5) = " THEN" AND currentIfLevel = j THEN
-                  'db_echo "ELSEIF found; same level:" + STR$(currentIfLevel)
-                  L$ = MID$(L$, 5)
-                  L1$ = MID$(L1$, 5)
-                  GOTO checkBlockCondition
-                ELSEIF currentIfLevel = j THEN
-                  PRINT "Expected ELSEIF condition THEN on line"; currentLine: running = FALSE: GOTO Parse.Done
-                END IF
-              END IF
-              IF L$ = "ELSE" AND currentIfLevel = j THEN
-                'db_echo "ELSE block found; same level:" + STR$(currentIfLevel)
-                EXIT DO
-              END IF
-              IF LEFT$(L$, 5) = "ELSE " AND currentIfLevel = j THEN
-                'db_echo "ELSE line found; same level:" + STR$(currentIfLevel)
-                L$ = MID$(L$, 6)
-                L1$ = MID$(L1$, 6)
-                GOTO redoThisLine
-              END IF
-          LOOP
-        END IF
-      ELSE
-        'single-line IF statement
-        'db_echo "Single-line IF, line" + STR$(currentLine)
-        j = Find(1, L$, " THEN ")
-        IF j = 0 THEN
-          PRINT "Expected IF condition THEN statements"
-          IF running THEN running = FALSE
-          GOTO Parse.Done
-        END IF
-        i$ = MID$(LEFT$(L1$, j), 3)
-        'db_echo "Condition: '" + i$ + "'"
-        IF VAL(Parse(i$)) <> 0 THEN
-          'db_echo "condition passed! ---------------->"
-          L$ = MID$(L$, j + 6)
-          L1$ = MID$(L1$, j + 6)
-          j = Find(1, L$, " ELSE ")
-          IF j = 0 THEN j = Find(1, L$, ":ELSE ")
-          IF j > 0 THEN
-            'remove ELSE part
-            L$ = LEFT$(L$, j - 1)
-            L1$ = LEFT$(L1$, j - 1)
+        temp$ = L$
+        IF LEN(L$) > 4 THEN temp$ = "ELSEIF"
+        DO
+          j = currentLine
+          currentLine = currentLine + 1
+          IF currentLine > UBOUND(program) AND currentIfLevel > 0 THEN
+            PRINT "IF without END IF on line"; currentLine
+            running = FALSE
+            GOTO Parse.Done
+          ELSEIF currentLine > UBOUND(program) THEN
+            PRINT "ELSE without IF on line"; j
+            running = FALSE
+            GOTO Parse.Done
           END IF
-          'db_echo "Redoing line as '" + L$ + "'"
-          GOTO redoThisLine
+          L1$ = program(currentLine)
+          L1$ = LTRIM$(RTRIM$(L1$))
+          L$ = UCASE$(L1$)
+          IF L$ = "END IF" OR L$ = "ENDIF" THEN currentIfLevel = currentIfLevel - 1: EXIT DO
+          IF L$ = "ELSE" AND temp$ = "ELSE" THEN
+            PRINT "ELSE used more than once on line"; currentLine
+            running = FALSE
+            GOTO Parse.Done
+          END IF
+        LOOP
+      ELSEIF L$ = "END IF" OR L$ = "ENDIF" THEN
+        IF running THEN
+          currentIfLevel = currentIfLevel - 1
         ELSE
-          'db_echo "condition is false! <----------------"
-          'look for ELSE
-          j = Find(j, L$, " ELSE ")
-          IF j = 0 THEN j = Find(1, L$, ":ELSE ")
-          IF j THEN
+          PRINT "Not valid in immediate mode."
+        END IF
+      ELSEIF LEFT$(L$, 3) = "IF " THEN
+        IF RIGHT$(L$, 5) = " THEN" THEN
+            'IF-THEN-ELSEIF-ELSE-END IF block
+
+            DIM i$
+
+            currentIfLevel = currentIfLevel + 1
+            'db_echo "IF block, line" + STR$(currentLine)
+            'db_echo "Current IF level:" + STR$(currentIfLevel)
+
+            checkBlockCondition:
+            i$ = MID$(L$, 4, LEN(L$) - 8)
+
+            IF VAL(Parse(running, i$)) = 0 THEN 'condition is FALSE
+              j = currentIfLevel
+              DO
+                currentLine = currentLine + 1
+                IF currentLine > UBOUND(program) THEN PRINT "IF without END IF on line"; currentLine: running = FALSE: GOTO Parse.Done
+                L1$ = program(currentLine)
+                L1$ = LTRIM$(RTRIM$(L1$))
+                L$ = UCASE$(L1$)
+                IF LEFT$(L$, 3) = "IF " AND RIGHT$(L$, 5) = " THEN" THEN
+                  'new if level...
+                  currentIfLevel = currentIfLevel + 1
+                  'db_echo "New IF line:" + STR$(currentLine)
+                  'db_echo "New IF level:" + STR$(currentIfLevel)
+                  _CONTINUE
+                END IF
+                IF L$ = "END IF" OR L$ = "ENDIF" THEN
+                  IF currentIfLevel = j THEN
+                    'db_echo "Proper END IF found:" + STR$(currentLine)
+                    EXIT DO
+                  ELSE
+                    currentIfLevel = currentIfLevel - 1
+                    'db_echo "Inner END IF found; level:" + STR$(currentIfLevel)
+                  END IF
+                END IF
+                IF LEFT$(L$, 7) = "ELSEIF " THEN
+                  IF RIGHT$(L$, 5) = " THEN" AND currentIfLevel = j THEN
+                    'db_echo "ELSEIF found; same level:" + STR$(currentIfLevel)
+                    L$ = MID$(L$, 5)
+                    L1$ = MID$(L1$, 5)
+                    GOTO checkBlockCondition
+                  ELSEIF currentIfLevel = j THEN
+                    PRINT "Expected ELSEIF condition THEN on line"; currentLine: running = FALSE: GOTO Parse.Done
+                  END IF
+                END IF
+                IF L$ = "ELSE" AND currentIfLevel = j THEN
+                  'db_echo "ELSE block found; same level:" + STR$(currentIfLevel)
+                  EXIT DO
+                END IF
+                IF LEFT$(L$, 5) = "ELSE " AND currentIfLevel = j THEN
+                  'db_echo "ELSE line found; same level:" + STR$(currentIfLevel)
+                  L$ = MID$(L$, 6)
+                  L1$ = MID$(L1$, 6)
+                  GOTO redoThisLine
+                END IF
+            LOOP
+          END IF
+        ELSE
+          'single-line IF statement
+          'db_echo "Single-line IF, line" + STR$(currentLine)
+          j = Find(1, L$, " THEN ")
+          IF j = 0 THEN
+            PRINT "Expected IF condition THEN statements"
+            IF running THEN running = FALSE
+            GOTO Parse.Done
+          END IF
+          i$ = MID$(LEFT$(L1$, j), 3)
+          'db_echo "Condition: '" + i$ + "'"
+          IF VAL(Parse(running, i$)) <> 0 THEN
+            'db_echo "condition passed! ---------------->"
             L$ = MID$(L$, j + 6)
             L1$ = MID$(L1$, j + 6)
-            'db_echo "ELSE: Redoing line as '" + L$ + "'"
+            j = Find(1, L$, " ELSE ")
+            IF j = 0 THEN j = Find(1, L$, ":ELSE ")
+            IF j > 0 THEN
+              'remove ELSE part
+              L$ = LEFT$(L$, j - 1)
+              L1$ = LEFT$(L1$, j - 1)
+            END IF
+            'db_echo "Redoing line as '" + L$ + "'"
             GOTO redoThisLine
+          ELSE
+            'db_echo "condition is false! <----------------"
+            'look for ELSE
+            j = Find(j, L$, " ELSE ")
+            IF j = 0 THEN j = Find(1, L$, ":ELSE ")
+            IF j THEN
+              L$ = MID$(L$, j + 6)
+              L1$ = MID$(L1$, j + 6)
+              'db_echo "ELSE: Redoing line as '" + L$ + "'"
+              GOTO redoThisLine
+            END IF
           END IF
         END IF
-      END IF
-    ELSEIF INSTR(L$, "=") > 0 THEN
-      'Assignment
-      varName$ = RTRIM$(LEFT$(L1$, INSTR(L1$, "=") - 1))
-      varIndex = addVar(varName$) 'either add or acquire existing index
-      IF vars(varIndex).protected THEN
-        PRINT "Variable is protected";
-        IF running THEN
-          running = FALSE
-          PRINT " on line "; currentLine
-        ELSE
-          PRINT
-        END IF
-        GOTO Parse.Done
-      END IF
-      DIM v$, t$
-      IF vars(varIndex).type = varTypeSTRING THEN
-        v$ = RTRIM$(LTRIM$(MID$(L1$, INSTR(L1$, "=") + 1)))
-        strings(varIndex) = Parse(v$)
-      ELSE
-        v$ = MID$(L1$, INSTR(L1$, "=") + 1)
-        t$ = Parse(v$)
-        IF vars(varIndex).type = varTypeINTEGER THEN
-          nums(varIndex) = INT(VAL(t$))
-        ELSE
-          nums(varIndex) = VAL(t$)
-        END IF
-      END IF
-    ELSE
-      'label?
-      L$ = L$ + " "
-      IF LEN(L$) > 2 AND (RIGHT$(LEFT$(L$, INSTR(L$, " ") - 1), 1) = ":" OR isNumber(RTRIM$(L$))) THEN
-        'it's a label
-      ELSE
-        syntaxerror:
-        IF LEN(L$) THEN PRINT "Syntax error";
+      ELSEIF INSTR(L$, "=") > 0 THEN
+        'Assignment
+        varName$ = RTRIM$(LEFT$(L1$, INSTR(L1$, "=") - 1))
+        varIndex = addVar(varName$, FALSE) 'either add or acquire existing index
+        IF vars(varIndex).protected THEN
+          PRINT "Variable is protected";
           IF running THEN
-            PRINT " on line"; currentLine
             running = FALSE
+            PRINT " on line "; currentLine
           ELSE
             PRINT
           END IF
+          GOTO Parse.Done
+        END IF
+        DIM v$, t$
+        IF vars(varIndex).type = varTypeSTRING THEN
+          v$ = RTRIM$(LTRIM$(MID$(L1$, INSTR(L1$, "=") + 1)))
+          strings(varIndex) = Parse(running, v$)
+        ELSE
+          v$ = MID$(L1$, INSTR(L1$, "=") + 1)
+          t$ = Parse(running, v$)
+          IF vars(varIndex).type = varTypeINTEGER THEN
+            nums(varIndex) = INT(VAL(t$))
+          ELSE
+            nums(varIndex) = VAL(t$)
+          END IF
+        END IF
+      ELSE
+        'label?
+        L$ = L$ + " "
+        IF LEN(L$) > 2 AND (RIGHT$(LEFT$(L$, INSTR(L$, " ") - 1), 1) = ":" OR isNumber(RTRIM$(L$))) THEN
+          'it's a label
+        ELSE
+          syntaxerror:
+          IF LEN(L$) THEN PRINT "Syntax error";
+            IF running THEN
+              PRINT " on line"; currentLine
+              running = FALSE
+            ELSE
+              PRINT
+            END IF
+          END IF
         END IF
       END IF
-    END IF
 
-Parse.Done:
-  IF LEN(Ucontinuation$) THEN L$ = Ucontinuation$: L1$ = continuation$: GOTO redoThisLine
-  IF externalLimit > 0 AND running THEN _LIMIT externalLimit
-  IF currentIfLevel < 0 THEN currentIfLevel = 0
+  Parse.Done:
+    IF LEN(Ucontinuation$) THEN L$ = Ucontinuation$: L1$ = continuation$: GOTO redoThisLine
+    IF externalLimit > 0 AND running THEN _LIMIT externalLimit
+    IF currentIfLevel < 0 THEN currentIfLevel = 0
 
-LOOP
+  LOOP
 
-FUNCTION AddVar~& (varName$)
+END SUB
+
+FUNCTION AddVar~& (varName$, protected AS _BYTE)
 
   DIM found AS LONG
 
@@ -854,6 +811,8 @@ FUNCTION AddVar~& (varName$)
   'type detection -----------------------------------------------------------
   vars(totalVars).type = detectType(varName$)
   '--------------------------------------------------------------------------
+
+  vars(totalVars).protected = protected
 
   vars(totalVars).scope = thisScope$
   addVar~& = totalVars
@@ -914,37 +873,6 @@ FUNCTION SearchVar~& (__varName$)
   NEXT
 
   IF found THEN searchVar~& = i
-
-END FUNCTION
-
-FUNCTION Load%% (file$)
-
-  DIM ff AS INTEGER, l$
-  ff = FREEFILE
-  OPEN file$ FOR BINARY AS ff
-
-  currentLine = 0
-  loadedFileContents$ = ""
-  DO
-    IF EOF(ff) THEN EXIT DO
-    LINE INPUT #ff, l$
-    currentLine = currentLine + 1
-    IF currentLine > UBOUND(program) THEN REDIM _PRESERVE program(currentLine + 999) AS STRING
-    program(currentLine) = l$
-    IF LEN(loadedFileContents$) > 0 THEN loadedFileContents$ = loadedFileContents$ + CHR$(10)
-    loadedFileContents$ = loadedFileContents$ + l$
-  LOOP
-
-  CLOSE ff
-
-  IF currentLine > 0 THEN
-    REDIM _PRESERVE program(currentLine) AS STRING
-    currentLine = 0
-    load%% = TRUE
-    loadedFile$ = file$
-  ELSE
-    load%% = FALSE
-  END IF
 
 END FUNCTION
 
@@ -1106,7 +1034,7 @@ FUNCTION GetVal## (__c$, foundAsText AS _BYTE, textReturn$)
         CASE "_inflate$": foundAsText = TRUE: textReturn$ = _INFLATE$(temp$)
         CASE "_instrrev": 'GetVal## = _instrrev
         CASE "_keydown": GetVal## = _KEYDOWN(temp##)
-        CASE "_keyhit": GetVal## = KEYHIT
+        CASE "_keyhit": GetVal## = keyhit
         CASE "_lastaxis": GetVal## = _LASTAXIS
         CASE "_lastbutton": GetVal## = _LASTBUTTON
         CASE "_lastwheel": GetVal## = _LASTWHEEL
@@ -1203,7 +1131,7 @@ FUNCTION GetVal## (__c$, foundAsText AS _BYTE, textReturn$)
 
 END FUNCTION
 
-FUNCTION Parse$ (__inputExpr AS STRING)
+FUNCTION Parse$ (running AS INTEGER, __inputExpr AS STRING)
 
   'Adapted from https://www.codeproject.com/Articles/1205435/Parsing-Mathematical-Expressions-in-VB-NET-Missi
   ' Call this routine to perform the actual mathematic expression parsing
@@ -1297,20 +1225,20 @@ FUNCTION Parse$ (__inputExpr AS STRING)
     'OC: Compute the result for the current part of the expression
     DIM Result AS STRING
     errorHappened = FALSE
-    Result = STR$(Compute(strs(index), returnAsText, textReturn))
+    Result = STR$(Compute(running, strs(index), returnAsText, textReturn))
     IF errorHappened THEN EXIT FUNCTION
     IF returnAsText THEN Result = " " + textReturn
     'OC: Iterate through all succeeding parts of the expression
     FOR n = index TO totalStrings
       'OC: For each part substitute the substring containing the current part of the expression
       'OC: with its numerical value without parentheses.
-      strs(n) = Replace(strs(n), "(" + strs(index) + ")", Result, 0, 0)
+      strs(n) = Replace1(strs(n), "(" + strs(index) + ")", Result, 0, 0)
     NEXT
   NEXT
   'OC: Compute the numerical value of the last part (e.g. the numerical resulting value of the entire expression)
   'OC: and return this value at the end of the following routine execution.
   errorHappened = FALSE
-  temp$ = STR$(Compute(strs(totalStrings), returnAsText, textReturn))
+  temp$ = STR$(Compute(running, strs(totalStrings), returnAsText, textReturn))
   IF errorHappened THEN EXIT FUNCTION
   IF returnAsText THEN
     Parse$ = textReturn
@@ -1320,7 +1248,7 @@ FUNCTION Parse$ (__inputExpr AS STRING)
 
 END FUNCTION
 
-FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
+FUNCTION Compute## (running AS INTEGER, expr AS STRING, foundAsText AS _BYTE, textReturn$)
 
   DIM i AS LONG, j AS LONG
   DIM l AS LONG, m AS LONG, lastIndex AS LONG
@@ -1365,20 +1293,20 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
   NEXT
   IF LEN(tempElement) THEN GOSUB addElement
 
-  IF debugging THEN
-    DIM el$, tempElCount AS LONG
-    el$ = ""
-    tempElCount = 0
-    FOR l = 1 TO totalElements
-      IF LEN(_TRIM$(element$(l))) > 0 THEN
-        tempElCount = tempElCount + 1
-        el$ = el$ + element(l)
-      END IF
-    NEXT
-    'db_echo "** Total elements:" + STR$(tempElCount) + " **"
-    'db_echo el$
-    'db_echo "     ***"
-  END IF
+  ' IF debugging THEN
+  '   DIM el$, tempElCount AS LONG
+  '   el$ = ""
+  '   tempElCount = 0
+  '   FOR l = 1 TO totalElements
+  '     IF LEN(_TRIM$(element$(l))) > 0 THEN
+  '       tempElCount = tempElCount + 1
+  '       el$ = el$ + element(l)
+  '     END IF
+  '   NEXT
+  '   'db_echo "** Total elements:" + STR$(tempElCount) + " **"
+  '   'db_echo el$
+  '   'db_echo "     ***"
+  ' END IF
 
   FOR i = 1 TO LEN(validOP$)
     FOR j = 1 TO totalElements
@@ -1416,19 +1344,19 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
         'db_echo "txtop1=" + txtop1$ + "; oper=" + op(i) + "; txtop2=" + txtop2$
         SELECT CASE op(i)
           CASE "^"
-            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
+            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError running, 13: EXIT FUNCTION
             foundAsText = FALSE
             result## = op1## ^ op2##
           CASE "*"
-            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
+            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError running, 13: EXIT FUNCTION
             foundAsText = FALSE
             result## = op1## * op2##
           CASE "/"
-            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
+            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError running, 13: EXIT FUNCTION
             foundAsText = FALSE
             result## = op1## / op2##
           CASE "\"
-            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
+            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError running, 13: EXIT FUNCTION
             foundAsText = FALSE
             result## = op1## \ op2##
           CASE "+"
@@ -1439,10 +1367,10 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               result## = op1## + op2##
               foundAsText = FALSE
             ELSE
-              throwError 13: EXIT FUNCTION
+              throwError running, 13: EXIT FUNCTION
             END IF
           CASE "-"
-            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError 13: EXIT FUNCTION
+            IF getvalTxtRet1 OR getvalTxtRet2 THEN throwError running, 13: EXIT FUNCTION
             result## = op1## - op2##
             foundAsText = FALSE
           CASE "="
@@ -1453,7 +1381,7 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               result## = (op1## = op2##)
               foundAsText = FALSE
             ELSE
-              throwError 13: EXIT FUNCTION
+              throwError running, 13: EXIT FUNCTION
             END IF
           CASE ">"
             IF getvalTxtRet1 AND getvalTxtRet2 THEN
@@ -1463,7 +1391,7 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               result## = (op1## > op2##)
               foundAsText = FALSE
             ELSE
-              throwError 13: EXIT FUNCTION
+              throwError running, 13: EXIT FUNCTION
             END IF
           CASE "<"
             IF getvalTxtRet1 AND getvalTxtRet2 THEN
@@ -1473,7 +1401,7 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
               result## = (op1## < op2##)
               foundAsText = FALSE
             ELSE
-              throwError 13: EXIT FUNCTION
+              throwError running, 13: EXIT FUNCTION
             END IF
         END SELECT
         'db_echo "temp result## =" + STR$(result##)
@@ -1486,19 +1414,19 @@ FUNCTION Compute## (expr AS STRING, foundAsText AS _BYTE, textReturn$)
           element(j) = STR$(result##)
         END IF
         lastIndex = j
-        IF debugging THEN
-          el$ = ""
-          tempElCount = 0
-          FOR l = 1 TO totalElements
-            IF LEN(_TRIM$(element$(l))) > 0 THEN
-              tempElCount = tempElCount + 1
-              el$ = el$ + element(l)
-            END IF
-          NEXT
-          'db_echo "** Total elements:" + STR$(tempElCount) + " **"
-          'db_echo el$
-          'db_echo "     ***"
-        END IF
+        ' IF debugging THEN
+        '   el$ = ""
+        '   tempElCount = 0
+        '   FOR l = 1 TO totalElements
+        '     IF LEN(_TRIM$(element$(l))) > 0 THEN
+        '       tempElCount = tempElCount + 1
+        '       el$ = el$ + element(l)
+        '     END IF
+        '   NEXT
+        '   'db_echo "** Total elements:" + STR$(tempElCount) + " **"
+        '   'db_echo el$
+        '   'db_echo "     ***"
+        ' END IF
       END IF
     NEXT
   NEXT
@@ -1536,7 +1464,7 @@ addElement:
 
 END FUNCTION
 
-FUNCTION Replace$ (TempText$, SubString$, NewString$, CaseSensitive AS _BYTE, TotalReplacements AS LONG)
+FUNCTION Replace1$ (TempText$, SubString$, NewString$, CaseSensitive AS _BYTE, TotalReplacements AS LONG)
 
   DIM FindSubString AS LONG, Text$
 
@@ -1563,7 +1491,7 @@ FUNCTION Replace$ (TempText$, SubString$, NewString$, CaseSensitive AS _BYTE, To
     END IF
   LOOP
 
-  Replace$ = Text$
+  Replace1$ = Text$
 
 END FUNCTION
 
@@ -1617,7 +1545,7 @@ END FUNCTION
 '  'IF debugging THEN _ECHO text$
 'END SUB
 
-SUB ThrowError (code AS INTEGER)
+SUB ThrowError (running AS INTEGER, code AS INTEGER)
   IF running THEN PRINT "("; _TRIM$(STR$(_ERRORLINE)); ") "
   PRINT "Error #"; code;
   IF running THEN
@@ -1646,4 +1574,57 @@ FUNCTION Find& (start AS LONG, text$, subtext$)
 
   Find& = p
 
+END FUNCTION
+
+FUNCTION Delimit% (Work$, Delim$) STATIC
+  Counter% = 0
+  FOR X% = 1 TO LEN(Delim$)
+    Counter% = Counter% + InCount%(Work$, MID$(Delim$, X%, 1))
+  NEXT X%
+  Delimit% = Counter%
+END FUNCTION
+
+SUB Parse (Work$, Delim$, Array$())
+
+  BeginPtr% = 1
+  Element% = 1
+
+  FOR EndPtr% = 1 TO LEN(Work$)
+    IF INSTR(Delim$, MID$(Work$, EndPtr%, 1)) THEN
+      Array$(Element%) = MID$(Work$, BeginPtr%, EndPtr% - BeginPtr%)
+      Element% = Element% + 1
+      BeginPtr% = EndPtr% + 1
+    END IF
+  NEXT
+
+  Array$(Element%) = MID$(Work$, BeginPtr%)
+
+END SUB
+
+SUB InitVar()
+  found = searchVar("val")
+  IF NOT found THEN
+    functions$ = "val,int,asc,cos,sin,len,rnd,timer,time$,date$,chr$,inkey$,_width,_height,_mousex,_mousey,_mousebutton,str$,asc,_resize,_resizewidth,_resizeheight,_scaledwidth,_scaledheight,_screenhide,_console,_blink,_fileexists,_direxists,_devices,_device$,_deviceinput,_lastbutton,_lastaxis,_lastwheel,_button,_buttonchange,_axis,_wheel,_screenx,_screeny,_os$,_title$,_mapunicode,_keydown,_keyhit,_windowhandle,_screenimage,_freetimer,_fullscreen,_smooth,_windowhasfocus,_clipboard$,_clipboardimage,_exit,_openhost,_connected,_connectionaddress,_connectionaddress$,_openconnection,_openclient,environ$,_errorline,_inclerrorline,_acceptfiledrop,_totaldroppedfiles,_droppedfile,_droppedfile$,_newimage,_loadimage,_copyimage,_source,_dest,_display,_pixelsize,_clearcolor,_blend,_defaultcolor,_backgroundcolor,_palettecolor,_loadfont,_fontwidth,_fontheight,_font,_printwidth,_printmode,_rgba,_rgba32,_rgb,_rgb32,_red,_red32,_green,_green32,_blue,_blue32,_alpha,_alpha32,_mouseinput,_mousewheel,freefile,shell,_shellhide,command$,_commandcount,_sndrate,_sndopenraw,_sndrawlen,_sndlen,_sndpaused,_sndopen,_sndgetpos,_sndplaying,_sndcopy,seek,loc,eof,lof,screen,point,tab,spc,inp,pos,sgn,lbound,ubound,oct$,hex$,exp,fix,cdbl,csng,_round,cint,clng,csrlin,mki$,mkl$,mks$,mkd$,mksmbf$,mkdmbf$,_mk$,cvsmbf,cvdmbf,cvi,cvl,cvs,cvd,_cv,string$,space$,instr,_instrrev,mid$,sqr,tan,atn,log,abs,erl,err,ucase$,lcase$,left$,right$,ltrim$,rtrim$,_trim$,_cwd$,_startdir$,_dir$,_inclerrorfile$,_atan2,_hypot,_pi,_desktopheight,_desktopwidth,_screenexists,_controlchr,_stricmp,_strcmp,_autodisplay,_shr,_shl,_deflate$,_inflate$,_readbit,_setbit,_resetbit,_togglebit"
+    delim$ = ","
+    x = Delimit%(functions$, delim$) + 1
+    DIM funcs$(x)
+    Parse functions$, delim$, funcs$()
+    FOR x = LBOUND(funcs$) TO UBOUND(funcs$)
+      varIndex = addVar(funcs$(x), TRUE)
+    NEXT
+  END IF
+END SUB
+
+FUNCTION Load$(file$)
+  ff = FREEFILE
+  OPEN file$ FOR BINARY AS ff
+  result$ = ""
+  DO
+    IF EOF(ff) THEN EXIT DO
+    LINE INPUT #ff, l$
+    IF LEN(result$) > 0 THEN result$ = result$ + CHR$(10)
+    result$ = result$ + l$
+  LOOP
+  CLOSE ff
+  Load$ = result$
 END FUNCTION
